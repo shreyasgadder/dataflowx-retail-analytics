@@ -3,13 +3,13 @@
 **Repository Name:** [dataflowx-retail-analytics](https://github.com/shreyasgadder/dataflowx-retail-analytics/)
 
 **Description:**  
-DataFlowX is a comprehensive real-time retail analytics pipeline that processes and transforms transaction data from a PostgreSQL database using PySpark. The data is streamed to Kafka for message brokering and then consumed via batch processing and stored in MongoDB. All components are orchestrated using Docker containers, ensuring scalable and efficient data handling for enhanced retail insights.
+DataFlowX is a comprehensive real-time retail analytics pipeline that processes and transforms transaction data from a PostgreSQL database using PySpark. The data is streamed to Kafka for message brokering and then consumed via Spark Streaming. After consumption, the data undergoes transformation before being stored in MongoDB. All components are orchestrated using Docker containers, ensuring scalable and efficient data handling for enhanced retail insights.
 
 ---
 
 ## Project Overview
 
-DataFlowX aims to provide a robust solution for real-time retail analytics. It processes transaction data sourced from a PostgreSQL database, transforms it with PySpark, and streams it through Kafka. The data is then consumed via Spark Streaming and stored in MongoDB. This setup allows for efficient and scalable data processing, enabling businesses to gain timely insights into their retail operations.
+DataFlowX provides a robust solution for real-time retail analytics. It processes transaction data sourced from a PostgreSQL database, transforms it with PySpark, and streams it through Kafka. The data is then consumed via Spark Streaming, transformed, and stored in MongoDB. This setup allows for efficient and scalable data processing, enabling businesses to gain timely insights into their retail operations.
 
 ### Key Features:
 - **Data Ingestion**: Reads transaction data from a PostgreSQL database.
