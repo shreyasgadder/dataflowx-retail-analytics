@@ -1,10 +1,17 @@
 # DataFlowX: Real-Time Retail Analytics Pipeline
 
+**Repository Name:** [dataflowx-retail-analytics](https://github.com/shreyasgadder/dataflowx-retail-analytics/)
+
+**Description:**  
+DataFlowX is a comprehensive real-time retail analytics pipeline that processes and transforms transaction data from a PostgreSQL database using PySpark. The data is streamed to Kafka for message brokering and then consumed via batch processing and stored in MongoDB. All components are orchestrated using Docker containers, ensuring scalable and efficient data handling for enhanced retail insights.
+
+---
+
 ## Project Overview
 
-The Retail Sales Application is a robust data processing system designed to handle transaction data from a PostgreSQL database. This application leverages PySpark to process and transform the data, which is then streamed to Kafka for real-time data streaming. The processed data is consumed via PySpark batch processing and stored in MongoDB. All components are orchestrated using Docker containers to ensure seamless integration and deployment.
+DataFlowX aims to provide a robust solution for real-time retail analytics. It processes transaction data sourced from a PostgreSQL database, transforms it with PySpark, and streams it through Kafka. The data is then consumed via Spark Streaming and stored in MongoDB. This setup allows for efficient and scalable data processing, enabling businesses to gain timely insights into their retail operations.
 
-### Key Features
+### Key Features:
 - **Data Ingestion**: Reads transaction data from a PostgreSQL database.
 - **Data Transformation**: Utilizes PySpark for data transformation and processing.
 - **Real-time Streaming**: Streams data to Kafka for real-time data processing.
@@ -12,125 +19,131 @@ The Retail Sales Application is a robust data processing system designed to hand
 - **Data Storage**: Stores the final transformed data in MongoDB.
 - **Dockerized**: All services are containerized using Docker for ease of deployment and scalability.
 
-## Installation Instructions
+---
 
-To set up the project locally, follow these steps:
+## Installation Instructions
 
 ### Prerequisites
 
-1. **PostgreSQL**: Ensure PostgreSQL is installed and running. You will need access to a PostgreSQL database with transaction data.
+- **Docker**: Install Docker to manage containerized services.
+- **Docker Compose**: Install Docker Compose
 
-2. **Apache Kafka**: Install Kafka and start the Kafka server. Ensure the Kafka broker is running and accessible.
 
-3. **Apache Spark**: Install Apache Spark. Ensure Spark is configured to use Kafka and MongoDB connectors.
+### Setup
 
-4. **Docker**: Install Docker to manage containerized services.
-
-### Setup Steps
-
-1. **Clone the Repository**
+1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/retail-sales-application.git
-   cd retail-sales-application
+   git clone https://github.com/yourusername/dataflowx-retail-analytics.git
+   cd dataflowx-retail-analytics
    ```
 
-2. **Build Docker Images**
+2. Build and start Docker containers:
    ```bash
    docker-compose build
+   docker-compose up -d
    ```
-
-3. **Start Services**
+   Or directly:
    ```bash
-   docker-compose up
+   docker-compose up -d --build
    ```
 
-4. **Set Environment Variables**
-   Create a `.env` file in the root directory with the following content:
-   ```env
-   POSTGRES_URI=jdbc:postgresql://localhost:5432/your_database
-   KAFKA_BROKER=myBroker:9092
-   MONGO_URI=mongodb://mongo:27017/retail_db
-   ```
+---
 
 ## Command Flow
 
-### Data Processing Commands
+1. **Prepare Data and Run Producers:**
+   - Execute `produce_data.bat`:
+     - It will prompt you for the filename that needs to be processed.
+     - The data from the file is copied to the PostgreSQL table.
+     - `producer.py` is then executed to handle the data transformation and streaming.
 
-1. **Ingest Data from PostgreSQL to Kafka**
-   ```python
-   spark.read \
-       .format("jdbc") \
-       .option("url", os.environ.get("POSTGRES_URI")) \
-       .option("dbtable", "transactions") \
-       .load() \
-       .write \
-       .format("kafka") \
-       .option("kafka.bootstrap.servers", os.environ.get("KAFKA_BROKER")) \
-       .option("topic", "transactions") \
-       .save()
-   ```
+2. **Run the Consumer:**
+   - In a new terminal tab, run:
+     ```bash
+     docker exec -it python-base python consumer.py
+     ```
 
-2. **Transform and Write Data from Kafka to MongoDB**
-   ```python
-   kafka_df = spark.readStream \
-       .format("kafka") \
-       .option("kafka.bootstrap.servers", os.environ.get("KAFKA_BROKER")) \
-       .option("subscribe", "transactions") \
-       .load()
-
-   messages_df = kafka_df.selectExpr("CAST(value AS STRING) as json_value") \
-       .select(from_json("json_value", schema).alias("data")) \
-       .filter(col("data.transaction_id").isNotNull()) \
-       .select("data.*")
-
-   messages_df.writeStream \
-       .format("mongodb") \
-       .option("spark.mongodb.connection.uri", os.environ.get("MONGO_URI")) \
-       .option("spark.mongodb.database", "retail_db") \
-       .option("spark.mongodb.collection", "transactions") \
-       .outputMode("update") \
-       .start()
-   ```
+---
 
 ## Usage
 
-1. **Run the Application**
+### Verify Data
 
-   To start the application and process data, execute:
+#### PostgreSQL
+
+1. Connect to the PostgreSQL database inside the container:
    ```bash
-   docker-compose up
+   docker exec -it postgres psql -U admin -d retail
    ```
 
-   This will start all necessary services, including PostgreSQL, Kafka, Spark, and MongoDB.
-
-2. **Stop the Application**
-
-   To stop all services, run:
-   ```bash
-   docker-compose down
+2. Import data from a CSV file into the `transactions` table:
+   ```sql
+   COPY transactions FROM '/csv_mount/data.csv' DELIMITER ',' CSV HEADER;
    ```
+
+3. Retrieve the first 10 rows from the `transactions` table:
+   ```sql
+   SELECT * FROM transactions LIMIT 10;
+   ```
+
+#### MongoDB
+
+1. Connect to the MongoDB shell inside the container:
+   ```bash
+   docker exec -it mongo mongosh
+   ```
+
+2. Switch to the `retail_db` database:
+   ```js
+   use retail_db
+   ```
+
+3. Display all collections in the current database:
+   ```js
+   show collections
+   ```
+
+4. Retrieve all documents in the `transactions` collection with formatted output:
+   ```js
+   db.transactions.find().pretty()
+   ```
+
+5. Find documents with `transaction_id` 1 in the `transactions` collection:
+   ```js
+   db.transactions.find({transaction_id: 1}).pretty()
+   ```
+
+6. Count the number of documents in the `transactions` collection:
+   ```js
+   db.transactions.count()
+   ```
+
+---
 
 ## Data Flow Diagram
 
-![Data Flow Diagram](path/to/data-flow-diagram.png)
+![Data Flow Diagram](path_to_your_diagram_image)
+
+The diagram visualizes how data moves from PostgreSQL through Spark to Kafka and then consumed via batch processing and stored in MongoDB.
+
+---
 
 ## Contributing Guidelines
 
-We welcome contributions to enhance the Retail Sales Application. To contribute, please follow these guidelines:
+We welcome contributions to the DataFlowX project! Please follow these guidelines:
 
-1. **Fork the Repository**: Create a fork of the repository on GitHub.
-2. **Create a Branch**: Create a new branch for your changes.
-   ```bash
-   git checkout -b feature/your-feature
-   ```
-3. **Make Changes**: Implement your changes and test them.
-4. **Submit a Pull Request**: Push your changes and create a pull request on GitHub. Ensure that your changes include appropriate documentation and test cases.
+- **Fork** the repository and create a new branch for your feature or bug fix.
+- **Write** clear, concise commit messages and update documentation as necessary.
+- **Submit** a pull request with a detailed description of your changes.
 
-### Coding Standards
-- Follow Python's PEP8 style guide.
-- Use descriptive commit messages.
+For coding standards, please refer to our [coding guidelines](path_to_your_coding_guidelines).
+
+---
 
 ## License Information
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the [MIT License](LICENSE). See the [LICENSE](LICENSE) file for details.
 
+---
+
+Feel free to adjust the paths, filenames, or commands based on your specific setup and requirements.
