@@ -1,15 +1,10 @@
 # DataFlowX: Real-Time Retail Analytics Pipeline
 
-**Repository Name:** [dataflowx-retail-analytics](https://github.com/shreyasgadder/dataflowx-retail-analytics/)
-
-**Description:**  
-DataFlowX is a comprehensive real-time retail analytics pipeline that processes and transforms transaction data from a PostgreSQL database using PySpark. The data is streamed to Kafka for message brokering and then consumed via Spark Streaming. After consumption, the data undergoes transformation before being stored in MongoDB. All components are orchestrated using Docker containers, ensuring scalable and efficient data handling for enhanced retail insights.
-
 ---
 
 ## Project Overview
 
-DataFlowX provides a robust solution for real-time retail analytics. It processes transaction data sourced from a PostgreSQL database, transforms it with PySpark, and streams it through Kafka. The data is then consumed via Spark Streaming, transformed, and stored in MongoDB. This setup allows for efficient and scalable data processing, enabling businesses to gain timely insights into their retail operations.
+**DataFlowX** offers a powerful solution for real-time retail analytics. This application efficiently manages and transforms transaction data from PostgreSQL to MongoDB, leveraging Apache Kafka and PySpark. It showcases a comprehensive data pipeline, encompassing data ingestion, transformation, and storage—all within Docker containers. Transaction data flows from PostgreSQL to Kafka for message brokering, then is processed and transformed by Spark Streaming, and finally stored in MongoDB. This architecture ensures scalable and efficient data processing, empowering businesses to swiftly derive actionable insights into their retail operations.
 
 ### Key Features:
 - **Data Ingestion**: Reads transaction data from a PostgreSQL database.
@@ -18,6 +13,43 @@ DataFlowX provides a robust solution for real-time retail analytics. It processe
 - **Batch Processing**: Consumes and processes data from Kafka in batch mode using PySpark.
 - **Data Storage**: Stores the final transformed data in MongoDB.
 - **Dockerized**: All services are containerized using Docker for ease of deployment and scalability.
+- **Schema Registry**: The schema registry is set up for managing and evolving Kafka message schemas.
+- **Control Center UI**: Kafka Topics and Consumer Groups, Kafka metrics - including topic throughput, consumer lag, and schema compatibility, can be monitored via the Control Center.
+
+---
+
+## Data Flow Diagram
+
+![Data Flow Diagram](path_to_your_diagram_image)
+
+The diagram visualizes how data moves from PostgreSQL through Spark to Kafka and then consumed via batch processing and stored in MongoDB.
+
+---
+
+## Folder Structure
+
+```plaintext
+.
+├── docker-compose.yaml             # Docker Compose configuration file for the entire application
+├── Dockerfile.pyspark              # Dockerfile for generaing python-base image
+├── init-mongo.js                   # MongoDB initialization script
+├── init.sql                        # SQL script for initializing PostgreSQL database
+├── produce-data.bat                # Batch script for data production
+├── requirements.txt                # Python dependencies required for the project
+├── wait-for-kafka.sh               # Script to ensure Kafka is up and running before starting other services
+├── pyspark/                        # Directory containing PySpark scripts
+│   ├── consumer.py                 # PySpark consumer script
+│   ├── place_order.py              # Script to simulate real-time order placement
+│   ├── producer.py                 # PySpark producer script
+│   ├── test_mongo_connection.py    # Script to test MongoDB connection
+└── superstore_sales/               # Directory containing CSV data files
+    ├── data.csv                    # Full CSV dataset
+    ├── batch1.csv                  # Batch 1 of CSV data
+    ├── batch2.csv                  # Batch 2 of CSV data
+    ├               
+    ├── batch9.csv                  # Batch 9 of CSV data
+    └── batch10.csv                 # Batch 10 of CSV data
+```
 
 ---
 
@@ -33,12 +65,13 @@ DataFlowX provides a robust solution for real-time retail analytics. It processe
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/dataflowx-retail-analytics.git
+   git clone https://github.com/shreyasgadder/dataflowx-retail-analytics.git
    cd dataflowx-retail-analytics
    ```
 
 2. Build and start Docker containers:
    ```bash
+   docker-compose pull
    docker-compose build
    docker-compose up -d
    ```
@@ -47,48 +80,74 @@ DataFlowX provides a robust solution for real-time retail analytics. It processe
    docker-compose up -d --build
    ```
 
+3. **Access Confluent Control Center UI:**
+
+   Navigate to [http://localhost:9021](http://localhost:9021) to monitor Kafka metrics and operations.
+
 ---
 
 ## Command Flow
 
-1. **Prepare Data and Run Producers:**
+### Initial Setup
+
+1. **Check if Kafka is up and running and topics are created:**
+   ```bash
+   docker logs -f init-kafka
+   ```
+
+2. **Data Production:**
+
+   You can either process data in batches or process the entire file at once.
+
+   > The `superstore_sales` folder contains `data.csv` with the full dataset or `batch1.csv`, `batch2.csv`, ..., `batch10.csv`, which are subsets of `data.csv`.
+   > In **Option 1**, these batch files can be processed individually, while in **Option 2**, they can be used for quicker execution.
+
+   **Option 1: Process data using `produce_data.bat`:**
    - Execute `produce_data.bat`:
      - It will prompt you for the filename that needs to be processed.
      - The data from the file is copied to the PostgreSQL table.
-     - `producer.py` is then executed to handle the data transformation and streaming.
-
-2. **Run the Consumer:**
-   - In a new terminal tab, run:
+     - `producer.py` is then executed to handle the data production to Kafka.
+   
+   **Option 2 (Recommended): Process data in batches using `place_order.py`:**
+   - Run the following command to process the data file in batches:
      ```bash
-     docker exec -it python-base python consumer.py
+     docker exec -it python-base python place_order.py file.csv --batch-size 500
      ```
+     - `file.csv` and `batch-size` are optional. The default values are `data.csv` and `200` respectively.
+     - Keeps on placing orders and calling `producer.py` mimicking real-time order placement scenario
+    
+3. **Data Consumption:**
+   1.  **[Optional] Verify the connection to MongoDB before consuming data:**
+      - Run a quick test to ensure MongoDB is connected properly:
+        ```bash
+        docker exec -it python-base python test_mongo_connection.py
+        ```
+   
+   2. **Run the Consumer:**
+      - In a new terminal tab, run the consumer to process and transform the data and insert in MongoDB:
+        ```bash
+        docker exec -it python-base python consumer.py
+        ```
 
----
+### Verifying Data
 
-## Usage
-
-### Verify Data
+After running the consumer, verify that the data has been transferred and transformed correctly.
 
 #### PostgreSQL
 
-1. Connect to the PostgreSQL database inside the container:
+1. Connect to PostgreSQL:
    ```bash
    docker exec -it postgres psql -U admin -d retail
    ```
 
-2. Import data from a CSV file into the `transactions` table:
-   ```sql
-   COPY transactions FROM '/csv_mount/data.csv' DELIMITER ',' CSV HEADER;
-   ```
-
-3. Retrieve the first 10 rows from the `transactions` table:
+2. View the first 10 rows of the `transactions` table:
    ```sql
    SELECT * FROM transactions LIMIT 10;
    ```
 
 #### MongoDB
 
-1. Connect to the MongoDB shell inside the container:
+1. Connect to the MongoDB shell:
    ```bash
    docker exec -it mongo mongosh
    ```
@@ -98,33 +157,71 @@ DataFlowX provides a robust solution for real-time retail analytics. It processe
    use retail_db
    ```
 
-3. Display all collections in the current database:
+3. Display all collections in the database:
    ```js
    show collections
    ```
 
-4. Retrieve all documents in the `transactions` collection with formatted output:
+4. View transformed data in the `transactions` collection:
    ```js
    db.transactions.find().pretty()
    ```
 
-5. Find documents with `transaction_id` 1 in the `transactions` collection:
+5. Count documents in the `transactions` collection:
+   ```js
+   db.transactions.countDocuments()
+   ```
+
+6. Find documents with specific `transaction_id` in the `transactions` collection:
    ```js
    db.transactions.find({transaction_id: 1}).pretty()
    ```
-
-6. Count the number of documents in the `transactions` collection:
-   ```js
-   db.transactions.count()
-   ```
-
 ---
 
-## Data Flow Diagram
+## Testing and Debugging Commands
 
-![Data Flow Diagram](path_to_your_diagram_image)
+- **Stop and Remove Containers:**
 
-The diagram visualizes how data moves from PostgreSQL through Spark to Kafka and then consumed via batch processing and stored in MongoDB.
+  ```bash
+  docker-compose down -v
+  ```
+
+- **Prune Docker System:**
+
+  ```bash
+  docker system prune -a --volumes
+  ```
+
+- **List Docker Containers:**
+
+  ```bash
+  docker ps -a
+  ```
+
+- **List Kafka Topics:**
+
+  ```bash
+  docker exec -it myBroker kafka-topics --list --bootstrap-server myBroker:9092
+  ```
+
+- **Describe Kafka Topics:**
+
+  ```bash
+  docker exec -it myBroker kafka-topics --describe --topic transactions --bootstrap-server myBroker:9092
+  docker exec -it myBroker kafka-topics --describe --topic last_tid_topic --bootstrap-server myBroker:9092
+  ```
+
+- **Consume Kafka Messages:**
+
+  ```bash
+  docker exec -it myBroker kafka-console-consumer --bootstrap-server myBroker:9092 --topic transactions --from-beginning
+  ```
+
+- **Inspect Docker Network:**
+
+  ```bash
+  docker network inspect super_store_nw
+  ```
 
 ---
 
@@ -132,9 +229,25 @@ The diagram visualizes how data moves from PostgreSQL through Spark to Kafka and
 
 We welcome contributions to the DataFlowX project! Please follow these guidelines:
 
-- **Fork** the repository and create a new branch for your feature or bug fix.
-- **Write** clear, concise commit messages and update documentation as necessary.
-- **Submit** a pull request with a detailed description of your changes.
+1. **Fork the Repository:**
+   - Create a personal copy of the repository on GitHub.
+
+2. **Clone Your Fork:**
+   - `git clone <your-fork-url>`
+
+3. **Create a Branch:**
+   - `git checkout -b <your-branch-name>`
+
+4. **Make Changes:**
+   - Implement your changes and test them.
+
+5. **Push Changes:**
+   - `git add .`
+   - `git commit -m "Describe your changes"`
+   - `git push origin <your-branch-name>`
+
+6. **Submit a Pull Request:**
+   - Go to the repository on GitHub and create a new pull request from your branch with a detailed description of your changes.
 
 For coding standards, please refer to our [coding guidelines](path_to_your_coding_guidelines).
 
@@ -146,4 +259,3 @@ This project is licensed under the [MIT License](LICENSE). See the [LICENSE](LIC
 
 ---
 
-Feel free to adjust the paths, filenames, or commands based on your specific setup and requirements.
