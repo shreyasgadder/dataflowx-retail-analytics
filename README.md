@@ -130,13 +130,12 @@ The diagram visualizes how data moves from PostgreSQL through Spark to Kafka and
     
 3. **Data Consumption:**
    1.  **[Optional] Verify the connection to MongoDB before consuming data:**
-      - Run a quick test to ensure MongoDB is connected properly:
+       - Run a quick test to ensure MongoDB is connected properly:
         ```bash
         docker exec -it python-base python test_mongo_connection.py
         ```
-   
    2. **Run the Consumer:**
-      - In a new terminal tab, run the consumer to process and transform the data and insert in MongoDB:
+       - In a new terminal tab, run the consumer to process and transform the data and insert in MongoDB:
         ```bash
         docker exec -it python-base python consumer.py
         ```
