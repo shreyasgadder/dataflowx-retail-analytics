@@ -1,7 +1,7 @@
 # DataFlowX: Real-Time Retail Analytics Pipeline
 
 ---
-https://github.com/shreyasgadder/dataflowx-retail-analytics/blob/main/README.md#testing-and-debugging-commands
+
 ## Table of Contents
 
 1. [Project Overview](#project-overview)
