@@ -1,6 +1,18 @@
 # DataFlowX: Real-Time Retail Analytics Pipeline
 
 ---
+https://github.com/shreyasgadder/dataflowx-retail-analytics/blob/main/README.md#testing-and-debugging-commands
+## Table of Contents
+
+1. [Project Overview](#project-overview)
+2. [Data Flow Diagram](#data-flow-diagram)
+3. [Folder Structure](#folder-structure)
+4. [Installation Instructions](#installation-instructions)
+5. [Command Flow](#command-flow)
+6. [Usage](#usage)
+7. [Testing And Debugging Commands](#testing-and-debugging-commands)
+8. [Contributing Guidelines](#contributing-guidelines)
+9. [License Information](#license-information)
 
 ## Project Overview
 
