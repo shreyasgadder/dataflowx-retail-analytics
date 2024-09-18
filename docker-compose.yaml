@@ -1,0 +1,193 @@
+services:
+  
+  myBroker:
+    image: confluentinc/cp-server:latest
+    hostname: myBroker
+    container_name: myBroker
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://myBroker:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      # Topic creation settings
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_CREATE_TOPICS: "transactions:1:1,last_tid_topic:1:1,errors:1:1"
+      # Confluent Metrics Reporter settings
+      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: 'myBroker:9092'
+      CONFLUENT_METRICS_REPORTER_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1    
+      CONFLUENT_METRICS_ENABLE: 'true'
+      CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'  
+      CONFLUENT_SCHEMA_REGISTRY_URL: 'http://schema-registry:8081'
+    networks:
+      - super_store_nw
+      
+  init-kafka:
+    image: confluentinc/cp-server:latest
+    container_name: init-kafka
+    depends_on:
+      - myBroker
+    volumes:
+      - ./wait-for-kafka.sh:/usr/bin/wait-for-kafka.sh 
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      /usr/bin/wait-for-kafka.sh myBroker -- \
+      
+      # blocks until kafka is reachable
+
+      echo -e 'Creating kafka topics'
+      kafka-topics --bootstrap-server myBroker:9092 --create --if-not-exists --topic last_tid_topic --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server myBroker:9092 --create --if-not-exists --topic transactions --replication-factor 1 --partitions 1
+
+      echo -e 'Successfully created the following topics:'
+      kafka-topics --bootstrap-server myBroker:9092 --list
+      "
+    networks:
+      - super_store_nw
+      
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - super_store_nw
+      
+  schema-registry:
+    image: confluentinc/cp-schema-registry:latest
+    hostname: schema-registry
+    container_name: schema-registry
+    depends_on:
+      - myBroker
+      - zookeeper
+      - init-kafka
+    volumes:
+    - ./wait-for-kafka.sh:/usr/bin/wait-for-kafka.sh
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      /usr/bin/wait-for-kafka.sh myBroker -- \
+      
+      # Restarting      
+      echo 'Starting Schema Registry' && \
+      /etc/confluent/docker/run
+      "
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://myBroker:9092    
+    networks:
+      - super_store_nw
+      
+  control-center:
+    image: confluentinc/cp-enterprise-control-center:latest
+    hostname: control-center
+    container_name: control-center
+    depends_on:
+      - myBroker
+      - schema-registry
+      - zookeeper
+    ports:
+      - "9021:9021"
+    environment:
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: 'PLAINTEXT://myBroker:9092'
+      CONTROL_CENTER_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      CONTROL_CENTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      CONTROL_CENTER_REPLICATION_FACTOR: 1
+      CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
+      CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
+      CONFLUENT_METRICS_TOPIC_REPLICATION: 1
+       # Metrics Reporter Configuration
+      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: 'PLAINTEXT://myBroker:9092'
+      CONFLUENT_METRICS_REPORTER_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
+      CONFLUENT_METRICS_REPORTER_ENABLED: 'true'
+    networks:
+      - super_store_nw
+
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: retail
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./superstore_sales:/csv_mount
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d retail"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - super_store_nw
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - super_store_nw
+
+  python-base:
+    build:
+      context: .
+      dockerfile: Dockerfile.pyspark
+    container_name: python-base
+    depends_on:
+      postgres:
+        condition: service_healthy
+      myBroker:
+        condition: service_started
+      mongo:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: retail
+      KAFKA_BOOTSTRAP_SERVERS: myBroker:9092
+      MONGO_DB: retail_db
+      MONGO_URI: mongodb://mongo:27017/
+    ports:
+      - "4045:4045"
+    volumes:
+      - ./superstore_sales:/csv_mount
+    networks:
+      - super_store_nw
+
+volumes:
+  pgdata:
+  mongodata:
+
+networks:
+  super_store_nw:
+    driver: bridge
