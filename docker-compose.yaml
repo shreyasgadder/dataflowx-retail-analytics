@@ -37,7 +37,7 @@ services:
     depends_on:
       - myBroker
     volumes:
-      - ./wait-for-kafka.sh:/usr/bin/wait-for-kafka.sh 
+      - ./init-scripts/wait-for-kafka.sh:/usr/bin/wait-for-kafka.sh 
     entrypoint: [ '/bin/sh', '-c' ]
     command: |
       "
@@ -76,7 +76,7 @@ services:
       - zookeeper
       - init-kafka
     volumes:
-    - ./wait-for-kafka.sh:/usr/bin/wait-for-kafka.sh
+    - ./init-scripts/wait-for-kafka.sh:/usr/bin/wait-for-kafka.sh
     entrypoint: [ '/bin/sh', '-c' ]
     command: |
       "
@@ -132,7 +132,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./superstore_sales:/csv_mount
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./init-scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin -d retail"]
       interval: 10s
@@ -148,7 +148,7 @@ services:
       - "27017:27017"
     volumes:
       - mongodata:/data/db
-      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js
+      - ./init-scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s

@@ -40,14 +40,11 @@ RUN apt-get update && apt-get install -y wget && \
 ENV JAVA_HOME=/usr/local
 ENV PATH=$JAVA_HOME/bin:$PATH
 
-# Copy requirements file
-COPY requirements.txt .
+# Copy scripts 
+COPY pyspark/* .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy scripts (producer.py, consumer.py, etc.)
-COPY pyspark/*.py .
 
 # Set environment variables for PySpark and Python
 ENV PYTHONUNBUFFERED=1
