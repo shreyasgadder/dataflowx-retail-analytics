@@ -45,15 +45,16 @@ The diagram visualizes how data moves from PostgreSQL through Spark to Kafka and
 .
 ├── docker-compose.yaml             # Docker Compose configuration file for the entire application
 ├── Dockerfile.pyspark              # Dockerfile for generaing python-base image
-├── init-mongo.js                   # MongoDB initialization script
-├── init.sql                        # SQL script for initializing PostgreSQL database
 ├── produce-data.bat                # Batch script for data production
-├── requirements.txt                # Python dependencies required for the project
-├── wait-for-kafka.sh               # Script to ensure Kafka is up and running before starting other services
+├── init-scripts/                   # Directory containing scripts
+│   ├── init-mongo.js                   # MongoDB initialization script
+│   ├── init.sql                        # SQL script for initializing PostgreSQL database
+│   ├── wait-for-kafka.sh           # Script to ensure Kafka is up and running before starting other services
 ├── pyspark/                        # Directory containing PySpark scripts
 │   ├── consumer.py                 # PySpark consumer script
 │   ├── place_order.py              # Script to simulate real-time order placement
 │   ├── producer.py                 # PySpark producer script
+│   ├── requirements.txt            # Python dependencies required for the project
 │   ├── test_mongo_connection.py    # Script to test MongoDB connection
 └── superstore_sales/               # Directory containing CSV data files
     ├── data.csv                    # Full CSV dataset
