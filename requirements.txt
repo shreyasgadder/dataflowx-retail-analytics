@@ -1,4 +1,0 @@
-pymongo
-psycopg2
-pyspark
-psycopg2-binary
