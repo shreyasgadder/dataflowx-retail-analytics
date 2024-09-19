@@ -47,8 +47,8 @@ The diagram visualizes how data moves from PostgreSQL through Spark to Kafka and
 ├── Dockerfile.pyspark              # Dockerfile for generaing python-base image
 ├── produce-data.bat                # Batch script for data production
 ├── init-scripts/                   # Directory containing scripts
-│   ├── init-mongo.js                   # MongoDB initialization script
-│   ├── init.sql                        # SQL script for initializing PostgreSQL database
+│   ├── init-mongo.js               # MongoDB initialization script
+│   ├── init.sql                    # SQL script for initializing PostgreSQL database
 │   ├── wait-for-kafka.sh           # Script to ensure Kafka is up and running before starting other services
 ├── pyspark/                        # Directory containing PySpark scripts
 │   ├── consumer.py                 # PySpark consumer script
