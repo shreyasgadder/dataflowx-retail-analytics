@@ -13,6 +13,7 @@
 7. [Testing And Debugging Commands](#testing-and-debugging-commands)
 8. [Contributing Guidelines](#contributing-guidelines)
 9. [License Information](#license-information)
+10. [Contact](#contact)
 
 ## Project Overview
 
@@ -270,3 +271,6 @@ This project is licensed under the [MIT License](LICENSE). See the [LICENSE](LIC
 
 ---
 
+## Contact
+
+For questions or support, please open an issue on the GitHub repository or contact me from [Portfolio](https://shreyasgadder.netlify.app/).
